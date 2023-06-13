@@ -6,6 +6,7 @@ This repository contains the implementation of a real-time emotion recognition s
 ## Prerequisites
 
 - Matlab 2019b or above
+- MATLAB Support Package for USB Webcams
 
 ## Implementation Details
 
