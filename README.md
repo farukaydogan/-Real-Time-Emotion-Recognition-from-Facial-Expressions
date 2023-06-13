@@ -1,6 +1,7 @@
 # Real-Time Emotion Recognition from Facial Expressions Using Convolutional Neural Networks
 
 ## Overview
+https://github.com/farukaydogan/Real-Time-Emotion-Recognition-from-Facial-Expressions/assets/57232389/469fac16-5c33-44e5-9ed9-915cb3ff7990
 
 This repository contains the implementation of a real-time emotion recognition system that utilizes Convolutional Neural Networks (CNN) to analyze facial expressions. This system demonstrates the power of deep learning techniques in the field of computer vision.
 ## Prerequisites
@@ -8,7 +9,9 @@ This repository contains the implementation of a real-time emotion recognition s
 - Matlab 2019b or above
 - MATLAB Support Package for USB Webcams
 
-## Implementation Details
+## Implementation 
+
+Details
 
 The system works by first capturing real-time facial expressions using a webcam. The facial images are then processed by the CNN, which has been trained to recognize different emotions based on facial expressions, thus identifying the subject's emotion in real time.
 
