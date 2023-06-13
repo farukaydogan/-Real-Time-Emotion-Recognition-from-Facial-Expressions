@@ -1,70 +1,81 @@
-% Video giriş nesnesini oluşturun
-vid = videoinput('macvideo', 1,'YCbCr422_192x192'); 
+% Kamerayı oluştur
+cam = webcam; 
 
-% Model için gerekli boyut ve kanal sayısını belirleyin
-inputSize = [48 48];
-numChannels = 1;  % Gri tonlamalı görüntüler için
+% Figure'ü oluştur
+figure;
 
+% Yüz algılayıcıyı oluştur
+faceDetector = vision.CascadeObjectDetector();
 
-labels={'kizgin','mutlu','uzgun','sasirmis'};
+% Sınıflandırıcıyı yükle
+% Burada modelinizi 'myModel' olarak adlandırdığımı varsayıyorum.
+load('/Users/pc/Documents/NisaMatlab/savingModel/tesekkurler.mat','net');
 
-% Model yükleme
-load('/Users/pc/Documents/NisaMatlab/savingModel/tesekkurler.mat', 'net');  % 'model_path.mat' model dosyanızın yolu olmalıdır
+% Etiketleri tanımlayın
+labels = {'Angry','Happy','Sad','Surprised'};
 
-% onCleanup işlevini ayarlayın
-cleanupObj = onCleanup(@() stop(vid));
-
-% Çerçeve boyutunu ayarlayın
-set(vid, 'FramesPerTrigger', Inf);
-
-
-% Yüz algılayıcıyı oluşturun
-faceDetector = vision.CascadeObjectDetector;
-
-
-% Video nesnesini başlatın
-start(vid)
-
-% Figür penceresi oluşturun
-hFig = figure('Menubar', 'none');
-
-% Canlı video görüntüsü oluşturun
-hImage = image(zeros(192, 192), 'Parent', gca, 'CDataMapping', 'scaled');
-
-% Frame sayacını oluşturun
-frameCounter = 0;
-
-% Video akışını güncelleyin
-while ishandle(hFig)
-    img = getdata(vid, 1, 'uint8');
+% Döngüyü try-catch bloğu içinde çalıştır
+try
+    while true
+        % Kameradan bir frame al
+        img = snapshot(cam);
         
-    % Görüntüyü gri tonlamalı yapın
-    img = rgb2gray(img);
-
-      if mod(frameCounter, 10) == 0
-         
-        % Yüzleri algılayın
-        bboxes = faceDetector(img);
-     
-        % Eğer yüz algılandıysa, yüzün görüntüsünü al ve yeniden boyutlandır
-        if ~isempty(bboxes)
-            faceImage = img(bboxes(1,2):bboxes(1,2)+bboxes(1,4), bboxes(1,1):bboxes(1,1)+bboxes(1,3), :);
-            
-            % Görüntüyü modelin girdi boyutuna yeniden boyutlandırın
-            resizedImage = imresize(faceImage, inputSize);
-            
-            label = classify(net, resizedImage);
-            
-            % Algılanan yüzleri görüntüye çizin
-            img = insertObjectAnnotation(img, 'rectangle', bboxes, labels(label));
+        % Görüntüyü siyah beyaz yap
+        img = rgb2gray(img);
+   
+        img = imresize(img, 0.5);        
+        % Yüzleri algıla
+        bboxes = step(faceDetector, img);
+        
+        % Algılanan her yüz için
+      % Algılanan her yüz için
+        for i = 1:size(bboxes, 1)
+            % Yüzü çıkar
+            face = img(bboxes(i,2):bboxes(i,2)+bboxes(i,4), bboxes(i,1):bboxes(i,1)+bboxes(i,3));
+        
+            % Yüzü sınıflandırıcıya uyacak şekilde yeniden boyutlandır
+            face = imresize(face, [48 48]);
+        
+            % Yüzü sınıflandır
+            label = classify(net, face);
+        
+            % Sınıf etiketini bboxes'e ekle
+            bboxes(i, 5) = label;
         end
-    end
+
+        % Eğer yüzler algılandıysa, yüzlerin üzerinde etiketlerle birlikte dikdörtgen çiz
+        if ~isempty(bboxes)
+            % Etiketleri metne çevir
+            labels = cell(size(bboxes, 1), 1);
+            for i = 1:size(bboxes, 1)
+                switch bboxes(i, 5)
+                    case 1
+                        labels{i} = 'Angry';
+                    case 2
+                        labels{i} = 'Happy';
+                    case 3
+                        labels{i} = 'Sad';
+                    case 4
+                        labels{i} = 'Surprised';
+                end
+            end
+
+            % Algılanan yüzleri ve etiketlerini dikdörtgen ile belirt
+            img = insertObjectAnnotation(img, 'rectangle', bboxes(:, 1:4), labels);
+        end
         
-    set(hImage, 'CData', img);
-    drawnow
+        % Frame'i görüntüle
+        imshow(img);
+        
+        % MATLAB'ın diğer işlemlerini gerçekleştirebilmesi için biraz duraklat
+        pause(0.2); % Bu değer yüksek çerçeve hızları için artırılabilir
+    end
+catch ME
+    % Hata durumunda (örneğin döngü kapatıldığında) burası çalışacak
+    disp('Döngü kapatıldı, kamera serbest bırakılıyor...');
+    fprintf('Bir hata meydana geldi:\n');
+    fprintf('%s\n', getReport(ME));
 end
 
-% Video nesnesini durdurun
-stop(vid);
-delete(vid);
-clear(vid);
+% Kamerayı kapat ve serbest bırak
+clear('cam');
